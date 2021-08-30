@@ -1,0 +1,24 @@
+*.pyc
+*.log
+*.out
+.cache
+.mypy_cache\
+.env
+/dist
+.coverage
+.pytest_cache/
+htmlcov/
+
+.DS_Store
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+selenium-debug.log
+
+# Editor directories and files
+.idea
+.vscode
+/env
+/__pycache__
+upload/*

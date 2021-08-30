@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="shortcut icon" href="{{ url_for( 'static', filename='images/favicon.png') }}" type="image/png">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Arvo:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+</head>
+<style>
+    /*======================
+    cdn page
+    =======================*/
+    .page_cdn {
+        padding: 40px 0;
+        background: #fff;
+        font-family: 'Arvo', serif;
+    }
+
+    .page_cdn img {
+        width: 100%;
+    }
+
+    .four_zero_four_bg {
+
+        background-image: url( {{ url_for('static',filename = 'images/31696-file-upload.gif') }});
+        height: 400px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+    }
+
+
+    .four_zero_four_bg h1 {
+        font-size: 80px;
+    }
+
+    .four_zero_four_bg h3 {
+        font-size: 80px;
+    }
+
+    .link_cdn {
+        color: #fff !important;
+        padding: 10px 20px;
+        background: #39ac31;
+        margin: 20px 0;
+        display: inline-block;
+    }
+    a.link_cdn{
+        text-decoration: none;
+    }
+    .contant_box_cdn {
+        margin-top: -50px;
+    }
+</style>
+
+<body>
+    <section class="page_cdn">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 ">
+                    <div class="col-sm-10 col-sm-offset-1  text-center">
+                        <div class="four_zero_four_bg">
+                            <h1 class="text-center ">SMS CDN</h1>
+                        </div>
+
+                        <div class="contant_box_cdn">
+                            <h3 class="h2">
+                                Welcome to CDN of sms team
+                            </h3>
+                            <p>but nothing here!</p>
+                            <a href="https://worldsms.vn/" class="link_cdn">🏠 Go to Home</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>
