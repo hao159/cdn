@@ -16,6 +16,18 @@ pip3 install -r requirements.txt
 - Change config app in `.env`
 - Change `APP_ENV` to `dev` for test and `product` for product
 
+Create DB
+- Collection `cdn-user` example data of user
+```json
+{
+    "_id": ObjectId("6128c754196b000025003e98"),
+    "user": "admin",
+    "password": "hao@123",
+    "active": true,
+    "max_upload_size": 200
+}
+```
+
 #### Run
 
 - Normal
@@ -37,6 +49,8 @@ pip3 install -r requirements.txt
 - Logging to graylog
 
 ## Usage
+Basic auth: 
+- 
 Input field:
 - `file`: file or url  | _(rerequired)_
 - `type`: type of file default `file` | accept `file` or direct `url` | _(optional)_
@@ -100,20 +114,20 @@ Example Request:
 Example Response:
 - Success:
     ```json
-        {
-            "desc": {
-                "custom_dir": "/hao/exel/",
-                "direct_url": "http://localhost:9999/file/admin/hao/exel/5M84N38X_30082021175602.xlsx",
-                "file_size": 244872,
-                "hide_url": "http://localhost:9999/file/hao/exel/612cb9423e5509492a8ed009",
-                "is_keep_name": false,
-                "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "raw_file_name": "qcdongtesttrung.xlsx",
-                "save_file_name": "5M84N38X_30082021175602.xlsx",
-                "user_name": "admin"
-            },
-            "status": "success"
-        }
+    {
+        "desc": {
+            "custom_dir": "/hao/exel/",
+            "direct_url": "http://localhost:9999/file/admin/hao/exel/5M84N38X_30082021175602.xlsx",
+            "file_size": 244872,
+            "hide_url": "http://localhost:9999/file/hao/exel/612cb9423e5509492a8ed009",
+            "is_keep_name": false,
+            "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "raw_file_name": "qcdongtesttrung.xlsx",
+            "save_file_name": "5M84N38X_30082021175602.xlsx",
+            "user_name": "admin"
+        },
+        "status": "success"
+    }
     ```
 - Error:
     ```json

@@ -41,26 +41,209 @@ def app_auth():
     else:
         raise Exception('Auth is required!')
 
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('page404.html', title='Page not found', e=e), 404
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index.html', methods=['GET', 'POST'])
 def index():
-    print(os.environ.get('APP_GRAYLOG_HOST'))
-    print(os.environ.get('APP_GRAYLOG_PORT'))
-    #log_gray_debug({"status" : 200, "desc" : "SMS Đây là log full msg"})
-    return render_template('index.html', title='CDN of SMS team')
+    return render_template('index.html', title=os.environ.get('APP_NAME'))
 
-@app.route('/test')
-def test():
-    log_gray({
-        "msg" : 'SMS Logging from Graypy lv CRITICAL',
-        'level' : 'CRITICAL'
-    }
-        , 'CRITICAL')
-    log_gray('SMS Logging from Graypy lv ERROR', 'ERROR')
-    return{
-        'status' : 200,
-        'desc' : "this is log"
-    }, 200
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    rCode = 406
+    rDesc = "Unknow error"
+    rStatus = 'error'
+    try:
+        user_info = app_auth()
+
+        request_json = request.get_json()
+        user = request_json.get('user')
+        password = request_json.get('password')
+        if user is None:
+            raise Exception('user is required!')
+        if password is None:
+            raise Exception('password is required!')
+        
+        if len(user) != len(re.findall("[a-z]", user)):
+            raise Exception('user only accept lowercase letters')
+        max_upload_size = os.environ.get('DEFAULT_MAX_SIZE_UPLOAD')
+        if request_json.get('max_upload_size') is not None:
+            if isinstance(request_json.get('max_upload_size'), int) == False:
+                raise Exception('max_upload_size invalid input')
+            max_upload_size = request_json.get('max_upload_size')
+        
+        try:
+            cdn_db = DBConnection.getInstance()
+            clt_user = cdn_db.cdn_user #TODO có nên lưu theo user
+            user_exist = clt_user.find_one({"user" : user})
+            if user_exist:
+                raise Exception('user exists')
+        except Exception as e:
+            raise Exception(e)
+        
+
+        gmt = time.gmtime()
+        item_user = {
+            "user": user,
+            "password": password,
+            "active": True,
+            "max_upload_size": max_upload_size,
+            'UCTtime' : datetime.datetime.utcnow(),
+            'timeStamp' : calendar.timegm(gmt),
+            'created_by' : {
+                'user' : user_info['user'],
+                'user_agent' : request.headers.get('User-Agent'),
+                'ip': request.remote_addr
+            }
+            
+        }
+
+        try:
+            cdn_db = DBConnection.getInstance()
+            clt_user = cdn_db.cdn_user #TODO có nên lưu theo user
+            file_id = clt_user.insert_one(item_user).inserted_id
+        except Exception as e:
+            raise Exception('Error connection')
+
+        rCode = 200
+        rStatus = 'success'
+        rDesc = {
+            'user' : user,
+            "password": password,
+            "max_upload_size" : max_upload_size
+        }
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        msg_log = {
+            'exc_type' : exc_type,
+            'fname' : fname,
+            'line_error' : exc_tb.tb_lineno,
+            'msg' : str(e)
+        }
+        log_gray(msg_log,'ERROR', request.authorization.username )
+        rDesc = str(e)
+        rCode = 400
+    finally:
+        return {
+            'status' : rStatus,
+            'desc' : rDesc,
+        }, rCode
+
+@app.route('/deactive_user/<user>', methods=['GET', 'POST'])
+def deactive_user(user):
+    rCode = 406
+    rDesc = "Unknow error"
+    rStatus = 'error'
+    try:
+        user_info = app_auth()
+        try:
+            cdn_db = DBConnection.getInstance()
+            clt_user = cdn_db.cdn_user #TODO có nên lưu theo user
+            user_exist = clt_user.find_one({"user" : user})
+            if user_exist is None:
+                raise Exception('user does not exist')
+        except Exception as e:
+            raise Exception(e)
+
+        #update
+        gmt = time.gmtime()
+        clt_user.update_one({"user" : user}, { "$set": {
+                "active" : False,
+                "updated_by" : {
+                    "desc" : "deactive_user",
+                    "user" : user_info['user'],
+                    'user_agent' : request.headers.get('User-Agent'),
+                    'ip': request.remote_addr,
+                    'UCTtime' : datetime.datetime.utcnow(),
+                    'timeStamp' : calendar.timegm(gmt),
+                }
+            } })
+
+        rCode = 200
+        rStatus = 'success'
+        rDesc = {
+            'user' : user,
+            'active' : False
+        }
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        msg_log = {
+            'exc_type' : exc_type,
+            'fname' : fname,
+            'line_error' : exc_tb.tb_lineno,
+            'msg' : str(e)
+        }
+        log_gray(msg_log,'ERROR', request.authorization.username )
+        rDesc = str(e)
+        rCode = 400
+    finally:
+        return {
+            'status' : rStatus,
+            'desc' : rDesc,
+        }, rCode
+
+@app.route('/set_size_upload/<user>/<size>', methods=['GET', 'POST'])
+def set_size_upload(user, size):
+    rCode = 406
+    rDesc = "Unknow error"
+    rStatus = 'error'
+    try:
+        user_info = app_auth()
+        try:
+            cdn_db = DBConnection.getInstance()
+            clt_user = cdn_db.cdn_user #TODO có nên lưu theo user
+            user_exist = clt_user.find_one({"user" : user})
+            if user_exist is None:
+                raise Exception('user does not exist')
+        except Exception as e:
+            raise Exception(e)
+        try:
+            size = int(size)
+        except Exception as e:
+            raise e
+        if size is None or size == '' or isinstance(size, int) == False:
+            raise Exception("invalid param size")
+        #update
+        gmt = time.gmtime()
+        clt_user.update_one({"user" : user}, { "$set": {
+                "max_upload_size" : size,
+                "updated_by" : {
+                    "desc" : "set_size_upload",
+                    "user" : user_info['user'],
+                    'user_agent' : request.headers.get('User-Agent'),
+                    'ip': request.remote_addr,
+                    'UCTtime' : datetime.datetime.utcnow(),
+                    'timeStamp' : calendar.timegm(gmt),
+                }
+            } })
+
+        rCode = 200
+        rStatus = 'success'
+        rDesc = {
+            'user' : user,
+            'max_upload_size' : size
+        }
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        msg_log = {
+            'exc_type' : exc_type,
+            'fname' : fname,
+            'line_error' : exc_tb.tb_lineno,
+            'msg' : str(e)
+        }
+        log_gray(msg_log,'ERROR', request.authorization.username )
+        rDesc = str(e)
+        rCode = 400
+    finally:
+        return {
+            'status' : rStatus,
+            'desc' : rDesc,
+        }, rCode
 
 #get file hide url
 @app.route('/file/<path:path>')
@@ -68,7 +251,7 @@ def download_file(path):
     try:
         #chia 2 nhánh down trực tiếp và down qua link hide
         paths= path.split('/')
-        if bson.objectid.ObjectId.is_valid(paths[-1]): # check coi path cuối cùng phải là mongoid ko
+        if ObjectId.is_valid(paths[-1]): # check coi path cuối cùng phải là mongoid ko
             cdn_db = DBConnection.getInstance()
             clt_file = cdn_db.cdn_file #TODO có nên lưu theo user
             file_info = clt_file.find_one({"_id": ObjectId(paths[-1])})
@@ -76,6 +259,7 @@ def download_file(path):
         else:
             return send_from_directory(UPLOAD_DIR+'/'.join(paths[:-1])+'/', paths[-1])
     except Exception as e:
+        #print(e)
         return render_template('404.html', title='File not found', e=e), 404
 
 
@@ -112,6 +296,9 @@ def upload():
         custom_dir = ''
         if request.form.get('custom_dir') is not None:
             custom_dir = request.form.get('custom_dir')
+            custom_dir= custom_dir.strip()
+            if custom_dir == "":
+                raise Exception('custom_dir is empty')
             #remove "/" path prefix and suffix
             if custom_dir[0] == '/':
                 custom_dir = custom_dir[1:]
@@ -124,7 +311,7 @@ def upload():
                 if not os.path.exists(user_path):
                     os.makedirs(user_path)
             else:
-                raise Exception("invalid custom_dir, only accept [a-zA-Z] and '/'")
+                raise Exception("invalid custom_dir, only accept [0-9a-zA-Z] and '/'")
         if type_upload == 'file':
             #process file
             if 'file' not in request.files:
@@ -174,7 +361,9 @@ def upload():
             'save_file_name' : save_file_name,
             'custom_dir' : custom_dir,
             'mimetype': mimetype,
-            'file_size' : size
+            'file_size' : size,
+            'user_agent' : request.headers.get('User-Agent'),
+            'ip': request.remote_addr
         }
         try:
             cdn_db = DBConnection.getInstance()
@@ -197,7 +386,6 @@ def upload():
             'save_file_name' : save_file_name,
             'hide_url' : hide_url,
             'direct_url' : direct_url,
-            'user_name': user_name,
             'custom_dir' : custom_dir,
             'mimetype' : mimetype,
             'file_size' : size,
@@ -210,7 +398,9 @@ def upload():
             'exc_type' : exc_type,
             'fname' : fname,
             'line_error' : exc_tb.tb_lineno,
-            'msg' : str(e)
+            'msg' : str(e),
+            'user_agent' : request.headers.get('User-Agent'),
+            'ip': request.remote_addr
         }
         log_gray(msg_log,'ERROR', request.authorization.username )
         rDesc = str(e)
